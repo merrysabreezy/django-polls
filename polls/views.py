@@ -9,6 +9,7 @@ from django.template import loader
 from django.db.models import F
 from django.urls import reverse
 from django.views import generic
+from django.utils import timezone
 
 def index1(request):
     latest_question_list = Question.objects.order_by("-pub_date")[:5]
@@ -67,15 +68,26 @@ def vote(request, question_id):
     
 class IndexView(generic.ListView):
     template_name = "polls/index.html"
-    context_object_name="latest_quetion_list"
+    context_object_name="latest_question_list"
 
     def get_queryset(self):
         """Return the last five published questions."""
-        return Question.objects.order_by("-pub_date")[:5]
+        # return Question.objects.order_by("-pub_date")[:5]
+
+        """Return the last five published questions (not including those set to be published in the future)."""
+        # Question.objects.filter(pub_date__lte=timezone.now()) returns a queryset containing Questions whose pub_date is less than or equal to - that is, earlier than or equal to - timezone.now.
+        return Question.objects.filter(pub_date__lte=timezone.now()).order_by("-pub_date")[:5]
+
     
 class DetailView(generic.DetailView):
     model= Question
     template_name="polls/detail.html"
+
+    def get_queryset(self):
+        """
+        Excludes any questions that aren't published yet.
+        """
+        return Question.objects.filter(pub_date__lte=timezone.now())
 
 class ResultsView(generic.DetailView):
     model= Question
